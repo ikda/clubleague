@@ -9,6 +9,8 @@ import { Alert } from "react-native";
 import { useMutation } from "react-apollo-hooks";
 import { LOG_IN, CONFIRM_SECRET } from "./AuthQueries";
 import { useLogIn } from "../../../AuthContext";
+import AppRoutes from "../../navigators/AppRoutes";
+import DetailsScreen from "../DetailsScreen";
 
 const View = styled.View`
 	justify-content: center;
@@ -20,12 +22,7 @@ export default ({ navigation }) => {
 	const confirmInput = useInput("");
 	const logIn = useLogIn();
 	const [loading, setLoading] = useState(false);
-	const confirmSecretMutation = useMutation(CONFIRM_SECRET, {
-		variables: {
-			secret: confirmInput.value,
-			email: navigation.getParam("email")
-		}
-	});
+	const [confirmSecretMutation, { data }] = useMutation(CONFIRM_SECRET);
 	const handleConfirm = async () => {
 		const { value } = confirmInput;
 		if (value === "" || !value.includes(" ")) {
@@ -33,22 +30,22 @@ export default ({ navigation }) => {
 		}
 		try {
 			setLoading(true);
-			const {
-				data: { confirmSecret }
-			} = await confirmSecretMutation();
-			if (confirmSecret !== "" || confirmSecret !== false) {
-				logIn(confirmSecret);
+			const confirmSecret = confirmSecretMutation({
+				variables: {
+					secret: confirmInput.value,
+					email: navigation.getParam("email")
+				}
+			});
+			secretKey = JSON.stringify(confirmSecret);
+			console.log(secretKey);
+			if (secretKey !== "" || secretKey !== false) {
+				logIn(secretKey);
 			} else {
 				Alert.alert("Wrong secret!");
 			}
 		} catch (e) {
 			console.log(e);
-			if (value === "enter") {
-				logIn(true);
-				navigation.navigate("HomeScreen");
-			} else {
-				Alert.alert("Can't confirm secret");
-			}
+			Alert.alert("Can't confirm secret");
 		} finally {
 			setLoading(false);
 		}
